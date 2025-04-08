@@ -17,10 +17,18 @@ db.once('open', () => {
   console.log('Connected to MongoDB');
 });
 
+// Define Comment Schema
+const commentSchema = new mongoose.Schema({
+  content: String,
+  createdAt: { type: Date, default: Date.now }
+});
+
 // Define Moment Schema
 const momentSchema = new mongoose.Schema({
   content: String,
-  createdAt: { type: Date, default: Date.now }
+  category: { type: String, enum: ['daily-irritations', 'random-events', 'general'], default: 'general' },
+  createdAt: { type: Date, default: Date.now },
+  comments: [commentSchema]
 });
 
 const Moment = mongoose.model('Moment', momentSchema);
@@ -32,7 +40,9 @@ app.use(express.json());
 // Routes
 app.get('/api/moments', async (req, res) => {
   try {
-    const moments = await Moment.find().sort({ createdAt: -1 });
+    const { category } = req.query;
+    const query = category ? { category } : {};
+    const moments = await Moment.find(query).sort({ createdAt: -1 });
     res.json(moments);
   } catch (error) {
     res.status(500).json({ error: 'Error fetching moments' });
@@ -42,12 +52,28 @@ app.get('/api/moments', async (req, res) => {
 app.post('/api/moments', async (req, res) => {
   try {
     const newMoment = new Moment({
-      content: req.body.content
+      content: req.body.content,
+      category: req.body.category || 'general'
     });
     await newMoment.save();
     res.status(201).json(newMoment);
   } catch (error) {
     res.status(500).json({ error: 'Error creating moment' });
+  }
+});
+
+app.post('/api/moments/:momentId/comments', async (req, res) => {
+  try {
+    const moment = await Moment.findById(req.params.momentId);
+    if (!moment) {
+      return res.status(404).json({ error: 'Moment not found' });
+    }
+    
+    moment.comments.push({ content: req.body.content });
+    await moment.save();
+    res.status(201).json(moment);
+  } catch (error) {
+    res.status(500).json({ error: 'Error adding comment' });
   }
 });
 
