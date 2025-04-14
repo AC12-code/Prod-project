@@ -23,16 +23,19 @@ Follow these steps to run the project locally:
 
 ```bash
 git clone https://github.com/AC12-code/Prod-project.git
+```
 
 
 ### 2. Install dependencies
 
 ```bash
 npm install
+```
 
 ### 3. Run project
 
 ```bash
 npm run server
 npm start
+```
 
